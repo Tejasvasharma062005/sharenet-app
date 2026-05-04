@@ -21,19 +21,28 @@ const MapComponent = dynamic(
   }
 );
 
+interface NGOData {
+  id: string;
+  full_name: string;
+  role: string;
+  [key: string]: unknown;
+}
+
+interface DeliveryData {
+  id: string;
+  status: string;
+  [key: string]: unknown;
+}
+
 export default function MapPage() {
   const [donations, setDonations] = useState<Donation[]>([]);
-  const [ngos, setNgos] = useState<any[]>([]);
-  const [deliveries, setDeliveries] = useState<any[]>([]);
+  const [ngos, setNgos] = useState<NGOData[]>([]);
+  const [deliveries, setDeliveries] = useState<DeliveryData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { user } = useUserStore();
   const [selectedDonation, setSelectedDonation] = useState<Donation | null>(null);
 
-  useEffect(() => {
-    fetchAllData();
-  }, [user]);
-
-  const fetchAllData = async () => {
+  const fetchAllData = React.useCallback(async () => {
     setIsLoading(true);
     
     // 1. Fetch Donations
@@ -56,10 +65,16 @@ export default function MapPage() {
       .in('status', ['accepted', 'in_transit']);
 
     setDonations(donationData as Donation[] || []);
-    setNgos(ngoData || []);
-    setDeliveries(deliveryData || []);
+    setNgos(ngoData as NGOData[] || []);
+    setDeliveries(deliveryData as DeliveryData[] || []);
     setIsLoading(false);
-  };
+  }, []);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchAllData();
+  }, [user, fetchAllData]);
+
 
   // Remove role restriction to allow ALL users to see the map as requested
   
@@ -76,9 +91,7 @@ export default function MapPage() {
             donations={donations} 
             ngos={ngos}
             deliveries={deliveries}
-            onSelectDonation={setSelectedDonation} 
-            userRole={user?.role}
-            userId={user?.id}
+            onSelectDonation={setSelectedDonation}
           />
           
           {/* Floating UI panel for selected donation */}

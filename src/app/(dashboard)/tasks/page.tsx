@@ -4,46 +4,21 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useUserStore } from '@/store/useUserStore';
 import { Donation } from '@/types';
-import { PostCard } from '@/components/feed/PostCard';
 import { Loader2, Package, Truck, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { QRDisplay } from '@/components/shared/QRDisplay';
 
+interface DeliveryTask extends Donation {
+  delivery_status?: string;
+}
+
 export default function VolunteerTasksPage() {
   const { user } = useUserStore();
-  const [tasks, setTasks] = useState<Donation[]>([]);
+  const [tasks, setTasks] = useState<DeliveryTask[]>([]);
   const [isAvailable, setIsAvailable] = useState(user?.is_verified || false);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    if (!user || user.role !== 'volunteer') return;
-    fetchMyTasks();
-    setIsAvailable(user.is_verified); // Mocking availability as verified status for now or add column
-  }, [user]);
-
-  // Real-time tracking logic
-  useEffect(() => {
-    const activeTask = tasks.find(t => (t as any).delivery_status === 'in_transit');
-    if (!activeTask) return;
-
-    console.log('[Tracking] Starting GPS tracking for task:', activeTask.id);
-    
-    const watchId = navigator.geolocation.watchPosition(
-      async (position) => {
-        const { latitude, longitude } = position.coords;
-        await supabase
-          .from('deliveries')
-          .update({ current_lat: latitude, current_lng: longitude })
-          .eq('donation_id', activeTask.id)
-          .eq('volunteer_id', user!.id);
-      },
-      (error) => console.error('[Tracking] GPS Error:', error),
-    );
-
-    return () => navigator.geolocation.clearWatch(watchId);
-  }, [tasks, user]);
-
-  const fetchMyTasks = async () => {
+  const fetchMyTasks = React.useCallback(async () => {
     setIsLoading(true);
     
     // Fetch donations where this volunteer is assigned
@@ -67,13 +42,41 @@ export default function VolunteerTasksPage() {
         delivery_status: deliveries?.find(del => del.donation_id === d.id)?.status
       }));
       
-      setTasks(merged as any[]);
+      setTasks(merged as DeliveryTask[]);
     } else {
       setTasks([]);
     }
     
     setIsLoading(false);
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (!user || user.role !== 'volunteer') return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchMyTasks();
+  }, [user, fetchMyTasks]);
+
+  // Real-time tracking logic
+  useEffect(() => {
+    const activeTask = tasks.find(t => t.delivery_status === 'in_transit');
+    if (!activeTask) return;
+
+    console.log('[Tracking] Starting GPS tracking for task:', activeTask.id);
+    
+    const watchId = navigator.geolocation.watchPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        await supabase
+          .from('deliveries')
+          .update({ current_lat: latitude, current_lng: longitude })
+          .eq('donation_id', activeTask.id)
+          .eq('volunteer_id', user!.id);
+      },
+      (error) => console.error('[Tracking] GPS Error:', error),
+    );
+
+    return () => navigator.geolocation.clearWatch(watchId);
+  }, [tasks, user]);
 
   const updateDeliveryStatus = async (donationId: string, newDeliveryStatus: string, newDonationStatus?: string) => {
     // Update deliveries table
@@ -144,7 +147,7 @@ export default function VolunteerTasksPage() {
         </div>
       ) : (
         <div className="space-y-6">
-          {tasks.map((task: any) => (
+          {tasks.map((task) => (
             <div key={task.id} className="bg-card border rounded-2xl shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-4">
               <div className="p-4 border-b bg-muted/30 flex justify-between items-center">
                 <span className={`px-3 py-1 rounded-full text-xs font-bold

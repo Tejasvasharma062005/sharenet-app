@@ -46,7 +46,7 @@ export async function GET(request: Request) {
       expiredIds 
     }, { status: 200 });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('TTL Cron Error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

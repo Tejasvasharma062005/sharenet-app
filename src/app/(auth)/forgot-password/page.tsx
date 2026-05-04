@@ -26,8 +26,9 @@ export default function ForgotPasswordPage() {
 
       if (error) throw error;
       setSuccess(true);
-    } catch (err: any) {
-      setError(err.message || 'Failed to send reset email.');
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to send reset email.';
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -38,7 +39,7 @@ export default function ForgotPasswordPage() {
       <div className="text-center">
         <h1 className="text-3xl font-bold tracking-tight">Forgot Password?</h1>
         <p className="text-muted-foreground mt-2">
-          No worries! Enter your email and we'll send you a reset link.
+          No worries! Enter your email and we&apos;ll send you a reset link.
         </p>
       </div>
 

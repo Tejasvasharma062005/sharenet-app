@@ -55,7 +55,7 @@ export async function POST(request: Request) {
       donation_id,
     }, { status: 200 });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('QR Verification Error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

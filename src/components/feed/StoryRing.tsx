@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 import React from 'react';
 import { Plus } from 'lucide-react';
 import { Donation, User } from '@/types';

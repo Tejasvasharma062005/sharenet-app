@@ -76,8 +76,9 @@ export default function SignupPage() {
           throw new Error('Profile created but not accessible. Please check your email for confirmation or verify database RLS policies.');
         }
       }
-    } catch (err: any) {
-      setError(err.message || 'Failed to create account.');
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to create account.';
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }

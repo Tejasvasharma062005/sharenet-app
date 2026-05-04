@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 'use client';
 
 import React, { useEffect, useState } from 'react';
@@ -88,9 +89,10 @@ export function PostCard({ donation, onClaim }: PostCardProps) {
 
       setClaimSuccess(true);
       onClaim?.(donation.id);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      setClaimError(err.message || 'Failed to claim. Please try again.');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to claim. Please try again.';
+      setClaimError(errorMessage);
     } finally {
       setIsClaiming(false);
     }

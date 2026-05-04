@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useUserStore } from '@/store/useUserStore';
 import { useRouter } from 'next/navigation';
@@ -31,13 +31,47 @@ interface UserRow {
   created_at: string;
 }
 
+interface ReportRow {
+  id: string;
+  donation_id?: string;
+  status: string;
+  reason: string;
+  reporter?: { full_name: string };
+  donation?: { title: string };
+}
+
+interface PendingNGORow {
+  id: string;
+  full_name: string;
+  email: string;
+}
+
+interface StatCardProps {
+  icon: React.ElementType;
+  label: string;
+  value: number;
+  color: string;
+}
+
+const StatCard = ({ icon: Icon, label, value, color }: StatCardProps) => (
+  <div className="bg-card border rounded-xl p-5 flex items-center gap-4 shadow-sm">
+    <div className={`h-12 w-12 rounded-xl flex items-center justify-center ${color}`}>
+      <Icon className="h-6 w-6" />
+    </div>
+    <div>
+      <p className="text-2xl font-bold">{value}</p>
+      <p className="text-sm text-muted-foreground">{label}</p>
+    </div>
+  </div>
+);
+
 export default function AdminPage() {
   const { user } = useUserStore();
   const router = useRouter();
   const [stats, setStats] = useState<PlatformStats | null>(null);
   const [users, setUsers] = useState<UserRow[]>([]);
-  const [reports, setReports] = useState<any[]>([]);
-  const [pendingNGOs, setPendingNGOs] = useState<any[]>([]);
+  const [reports, setReports] = useState<ReportRow[]>([]);
+  const [pendingNGOs, setPendingNGOs] = useState<PendingNGORow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'reports' | 'verification'>('overview');
 
@@ -47,40 +81,24 @@ export default function AdminPage() {
     }
   }, [user, router]);
 
-  useEffect(() => {
-    if (!user || user.role !== 'admin') return;
-    fetchData();
-  }, [user]);
-
-  const fetchData = async () => {
-    setIsLoading(true);
-    await Promise.all([
-      fetchStats(),
-      fetchUsers(),
-      fetchReports(),
-      fetchPendingNGOs(),
-    ]);
-    setIsLoading(false);
-  };
-
-  const fetchReports = async () => {
+  const fetchReports = useCallback(async () => {
     const { data } = await supabase
       .from('reported_items')
       .select('*, donation:donations(*), reporter:users!reporter_id(*)')
       .order('created_at', { ascending: false });
-    setReports(data || []);
-  };
+    setReports(data as ReportRow[] || []);
+  }, []);
 
-  const fetchPendingNGOs = async () => {
+  const fetchPendingNGOs = useCallback(async () => {
     const { data } = await supabase
       .from('users')
       .select('*')
       .eq('role', 'ngo')
       .eq('is_verified', false);
-    setPendingNGOs(data || []);
-  };
+    setPendingNGOs(data as PendingNGORow[] || []);
+  }, []);
 
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async () => {
     const [
       { count: totalUsers },
       { count: totalDonations },
@@ -112,15 +130,32 @@ export default function AdminPage() {
       totalDonors: totalDonors || 0,
     });
     setIsLoading(false);
-  };
+  }, []);
 
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     const { data } = await supabase
       .from('users')
       .select('*')
       .order('created_at', { ascending: false });
     setUsers(data as UserRow[] || []);
-  };
+  }, []);
+
+  const fetchData = useCallback(async () => {
+    setIsLoading(true);
+    await Promise.all([
+      fetchStats(),
+      fetchUsers(),
+      fetchReports(),
+      fetchPendingNGOs(),
+    ]);
+    setIsLoading(false);
+  }, [fetchStats, fetchUsers, fetchReports, fetchPendingNGOs]);
+
+  useEffect(() => {
+    if (!user || user.role !== 'admin') return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchData();
+  }, [user, fetchData]);
 
   const toggleVerification = async (userId: string, currentStatus: boolean) => {
     await supabase
@@ -173,18 +208,6 @@ export default function AdminPage() {
       </div>
     );
   }
-
-  const StatCard = ({ icon: Icon, label, value, color }: any) => (
-    <div className="bg-card border rounded-xl p-5 flex items-center gap-4 shadow-sm">
-      <div className={`h-12 w-12 rounded-xl flex items-center justify-center ${color}`}>
-        <Icon className="h-6 w-6" />
-      </div>
-      <div>
-        <p className="text-2xl font-bold">{value}</p>
-        <p className="text-sm text-muted-foreground">{label}</p>
-      </div>
-    </div>
-  );
 
   return (
     <div className="max-w-6xl mx-auto p-4 md:p-6 mb-20 md:mb-0">

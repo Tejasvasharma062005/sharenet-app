@@ -62,6 +62,8 @@ export function useRealtimeFeed(filters: FeedFilters = {}) {
    * Fetch initial data with urgency-based sort
    */
   const fetchDonations = useCallback(async () => {
+    // Avoid synchronous setState in effect
+    await Promise.resolve();
     setIsLoading(true);
     setError(null);
 
@@ -91,6 +93,7 @@ export function useRealtimeFeed(filters: FeedFilters = {}) {
   }, [applyFilters]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchDonations();
 
     // Supabase Realtime subscription

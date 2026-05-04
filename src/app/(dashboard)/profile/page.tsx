@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 'use client';
 
 import React, { useEffect, useState } from 'react';
@@ -41,7 +42,7 @@ export default function ProfilePage() {
             .order('claim_timestamp', { ascending: false });
           
           const flat = (data || []).map(c => c.donation).filter(Boolean);
-          setMyDonations(flat as any[]);
+          setMyDonations(flat as unknown as Donation[]);
         } else if (user.role === 'volunteer') {
           // Volunteers see their assigned/in-transit deliveries
           const { data } = await supabase
@@ -51,7 +52,7 @@ export default function ProfilePage() {
             .neq('status', 'delivered');
             
           const flat = (data || []).map(d => d.donation).filter(Boolean);
-          setMyDonations(flat as any[]);
+          setMyDonations(flat as unknown as Donation[]);
         }
       } catch (err) {
         console.error('Profile fetch error:', err);

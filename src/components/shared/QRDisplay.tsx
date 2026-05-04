@@ -18,7 +18,8 @@ export function QRDisplay({ donationId, volunteerId, donationTitle }: QRDisplayP
   const [expiresAt, setExpiresAt] = useState<Date | null>(null);
   const [timeLeft, setTimeLeft] = useState('');
 
-  const generateQR = async () => {
+  const generateQR = React.useCallback(async () => {
+    await Promise.resolve(); // Avoid synchronous setState in effect
     setIsLoading(true);
     setError('');
     try {
@@ -46,13 +47,13 @@ export function QRDisplay({ donationId, volunteerId, donationTitle }: QRDisplayP
       // Set expiry (5 minutes from now)
       const expiry = new Date(payload.timestamp + 5 * 60 * 1000);
       setExpiresAt(expiry);
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError('Could not generate QR code. Please try again.');
       console.error(err);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [donationId, volunteerId]);
 
   // Countdown timer
   useEffect(() => {
@@ -72,8 +73,9 @@ export function QRDisplay({ donationId, volunteerId, donationTitle }: QRDisplayP
   }, [expiresAt]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     generateQR();
-  }, [donationId, volunteerId]);
+  }, [generateQR]);
 
   return (
     <div className="flex flex-col items-center gap-4 p-6 bg-card rounded-2xl border shadow-md max-w-sm mx-auto">

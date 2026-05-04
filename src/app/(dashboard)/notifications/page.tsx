@@ -27,9 +27,24 @@ export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  const fetchNotifications = React.useCallback(async () => {
+    setIsLoading(true);
+    const { data, error } = await supabase
+      .from('notifications')
+      .select('*')
+      .eq('user_id', user!.id)
+      .order('created_at', { ascending: false });
+
+    if (!error && data) {
+      setNotifications(data as Notification[]);
+    }
+    setIsLoading(false);
+  }, [user]);
+
   useEffect(() => {
     if (!user) return;
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchNotifications();
 
     // Real-time subscription for new notifications
@@ -48,21 +63,8 @@ export default function NotificationsPage() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user]);
+  }, [user, fetchNotifications]);
 
-  const fetchNotifications = async () => {
-    setIsLoading(true);
-    const { data, error } = await supabase
-      .from('notifications')
-      .select('*')
-      .eq('user_id', user!.id)
-      .order('created_at', { ascending: false });
-
-    if (!error && data) {
-      setNotifications(data as Notification[]);
-    }
-    setIsLoading(false);
-  };
 
   const markAllAsRead = async () => {
     if (!user) return;
@@ -117,7 +119,7 @@ export default function NotificationsPage() {
       ) : notifications.length === 0 ? (
         <div className="text-center py-16 bg-card rounded-2xl border">
           <BellOff className="h-12 w-12 mx-auto mb-3 text-muted-foreground opacity-30" />
-          <p className="font-semibold text-foreground">You're all caught up!</p>
+          <p className="font-semibold text-foreground">You&apos;re all caught up!</p>
           <p className="text-sm text-muted-foreground">No notifications yet.</p>
         </div>
       ) : (

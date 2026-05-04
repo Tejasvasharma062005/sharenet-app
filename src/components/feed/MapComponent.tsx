@@ -4,11 +4,12 @@ import React, { useEffect, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap, Polyline } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Donation } from '@/types';
-import { MapPin, Navigation, ExternalLink, Compass } from 'lucide-react';
+import { ExternalLink, Compass } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import L from 'leaflet';
 
 // Fix for default marker icons in Leaflet with Next.js
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
@@ -45,13 +46,26 @@ const createCustomIcon = (type: 'donation' | 'ngo' | 'volunteer', isUrgent?: boo
   });
 };
 
+interface MapNgo {
+  id: string | number;
+  lat?: number;
+  lng?: number;
+  full_name?: string;
+  [key: string]: unknown;
+}
+
+interface MapDelivery {
+  id: string | number;
+  current_lat?: number;
+  current_lng?: number;
+  [key: string]: unknown;
+}
+
 interface MapComponentProps {
   donations: Donation[];
-  ngos?: any[];
-  deliveries?: any[];
+  ngos?: MapNgo[];
+  deliveries?: MapDelivery[];
   onSelectDonation: (donation: Donation) => void;
-  userRole?: string;
-  userId?: string;
 }
 
 function RouteLayer({ destination, userLocation }: { destination: [number, number] | null, userLocation: [number, number] | null }) {
@@ -60,7 +74,7 @@ function RouteLayer({ destination, userLocation }: { destination: [number, numbe
 
   useEffect(() => {
     if (!destination || !userLocation) {
-      setRoute([]);
+      Promise.resolve().then(() => setRoute([]));
       return;
     }
 
@@ -72,7 +86,7 @@ function RouteLayer({ destination, userLocation }: { destination: [number, numbe
         );
         const data = await response.json();
         if (data.routes && data.routes[0]) {
-          const coords = data.routes[0].geometry.coordinates.map((c: any) => [c[1], c[0]]);
+          const coords = data.routes[0].geometry.coordinates.map((c: [number, number]) => [c[1], c[0]]);
           setRoute(coords);
           
           // Fit map to show both points and the route
@@ -112,7 +126,7 @@ function MapAutoCenter({ donations, onLocationFound }: { donations: Donation[], 
   return null;
 }
 
-export default function MapComponent({ donations, ngos = [], deliveries = [], onSelectDonation, userRole, userId }: MapComponentProps) {
+export default function MapComponent({ donations, ngos = [], deliveries = [], onSelectDonation }: MapComponentProps) {
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
   const [selectedDest, setSelectedDest] = useState<[number, number] | null>(null);
   
@@ -152,25 +166,24 @@ export default function MapComponent({ donations, ngos = [], deliveries = [], on
       {/* 2. NGOs / Recipients */}
       {ngos.map((ngo) => (
         <Marker 
-          key={ngo.id} 
-          position={[ngo.lat || 22.7196, ngo.lng || 75.8577]} 
+          key={String(ngo.id)} 
+          position={[(ngo.lat as number) || 22.7196, (ngo.lng as number) || 75.8577]} 
           icon={createCustomIcon('ngo')}
         >
           <Popup>
             <div className="p-2">
-              <p className="font-bold text-sm">{ngo.full_name}</p>
+              <p className="font-bold text-sm">{String(ngo.full_name)}</p>
               <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Verified Recipient</p>
             </div>
           </Popup>
         </Marker>
       ))}
 
-      {/* 3. Active Volunteers / Deliveries */}
       {deliveries.map((delivery) => (
         delivery.current_lat && delivery.current_lng && (
           <Marker 
-            key={delivery.id} 
-            position={[delivery.current_lat, delivery.current_lng]} 
+            key={String(delivery.id)} 
+            position={[delivery.current_lat as number, delivery.current_lng as number]} 
             icon={createCustomIcon('volunteer')}
           >
             <Popup>

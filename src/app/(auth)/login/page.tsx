@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { AlertCircle, Loader2, Eye, EyeOff } from 'lucide-react';
-import { Role, User } from '@/types';
+import { User } from '@/types';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -52,8 +52,9 @@ export default function LoginPage() {
           await supabase.auth.signOut(); // Log out so we don't get stuck in a loop
         }
       }
-    } catch (err: any) {
-      setError(err.message || 'Failed to sign in. Please check your credentials.');
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to sign in. Please check your credentials.';
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
