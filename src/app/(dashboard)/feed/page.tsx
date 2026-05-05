@@ -8,6 +8,7 @@ import { useUserStore } from '@/store/useUserStore';
 import { Loader2, RefreshCw, SlidersHorizontal, Map as MapIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
+import { Donation } from '@/types';
 
 const CATEGORIES = ['All', 'Food', 'Clothing', 'Goods', 'Other'];
 
@@ -22,15 +23,35 @@ export default function FeedPage() {
     urgentOnly,
   });
 
-  const urgentDonations = donations.filter(d => d.is_urgent);
+  // Group all donations by donor — one ring per person (WhatsApp-style)
+  const myDonations = donations.filter(d => d.donor_id === user?.id);
+
+  // Group OTHER donors' donations into a map: donorId -> Donation[]
+  const otherDonorMap = new Map<string, Donation[]>();
+  donations
+    .filter(d => d.donor_id !== user?.id)
+    .forEach(d => {
+      const key = d.donor_id ?? d.id;
+      if (!otherDonorMap.has(key)) otherDonorMap.set(key, []);
+      otherDonorMap.get(key)!.push(d);
+    });
 
   return (
     <div className="w-full">
-      {/* Story Rings for Urgent Drops */}
+      {/* Story Rings — one per donor (WhatsApp-style grouping) */}
       <div className="flex space-x-4 p-4 overflow-x-auto border-b bg-card scrollbar-hide">
-        {user && <StoryRing isCurrentUser user={user} onClick={() => router.push('/profile')} />}
-        {urgentDonations.map(donation => (
-          <StoryRing key={`story-${donation.id}`} donation={donation} />
+        {/* Current user always shown first */}
+        {user && (
+          <StoryRing
+            isCurrentUser
+            user={user}
+            donations={myDonations}
+            onClick={() => router.push('/my-donations')}
+          />
+        )}
+        {/* One ring per OTHER donor */}
+        {Array.from(otherDonorMap.entries()).map(([donorId, donorDonations]) => (
+          <StoryRing key={`story-donor-${donorId}`} donations={donorDonations} />
         ))}
       </div>
 
@@ -76,39 +97,41 @@ export default function FeedPage() {
 
       {/* Main Feed */}
       <div className="p-4 md:p-6 bg-muted/20 min-h-screen">
-        {isLoading ? (
-          <div className="flex items-center justify-center py-16">
-            <Loader2 className="animate-spin h-8 w-8 text-[var(--color-urgency-orange)]" />
-          </div>
-        ) : error ? (
-          <div className="text-center py-12 bg-card rounded-xl border">
-            <p className="text-destructive font-medium mb-3">{error}</p>
-            <Button variant="outline" onClick={refetch} className="gap-2">
-              <RefreshCw className="h-4 w-4" />
-              Try Again
-            </Button>
-          </div>
-        ) : donations.length === 0 ? (
-          <div className="text-center py-12 bg-card rounded-xl border">
-            <p className="text-muted-foreground font-medium">No donations match your filters.</p>
-            <p className="text-sm text-muted-foreground mt-1">Try a different category or check back soon.</p>
-          </div>
-        ) : (
-          <>
-            <p className="text-xs text-muted-foreground mb-3 font-medium">
-              {donations.length} donation{donations.length !== 1 ? 's' : ''} nearby · sorted by urgency
-            </p>
-            <div className="flex flex-col gap-3">
-              {donations.map(donation => (
-                <PostCard
-                  key={donation.id}
-                  donation={donation}
-                  onClaim={(id) => console.log('Claimed', id)}
-                />
-              ))}
+        <div className="max-w-2xl mx-auto w-full">
+          {isLoading ? (
+            <div className="flex items-center justify-center py-16">
+              <Loader2 className="animate-spin h-8 w-8 text-[var(--color-urgency-orange)]" />
             </div>
-          </>
-        )}
+          ) : error ? (
+            <div className="text-center py-12 bg-card rounded-xl border">
+              <p className="text-destructive font-medium mb-3">{error}</p>
+              <Button variant="outline" onClick={refetch} className="gap-2">
+                <RefreshCw className="h-4 w-4" />
+                Try Again
+              </Button>
+            </div>
+          ) : donations.length === 0 ? (
+            <div className="text-center py-12 bg-card rounded-xl border">
+              <p className="text-muted-foreground font-medium">No donations match your filters.</p>
+              <p className="text-sm text-muted-foreground mt-1">Try a different category or check back soon.</p>
+            </div>
+          ) : (
+            <>
+              <p className="text-xs text-muted-foreground mb-3 font-medium">
+                {donations.length} donation{donations.length !== 1 ? 's' : ''} nearby · sorted by urgency
+              </p>
+              <div className="flex flex-col gap-4">
+                {donations.map(donation => (
+                  <PostCard
+                    key={donation.id}
+                    donation={donation}
+                    onClaim={(id) => console.log('Claimed', id)}
+                  />
+                ))}
+              </div>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -150,11 +150,11 @@ export function PostCard({ donation, onClaim }: PostCardProps) {
       </div>
 
       {/* Media Content */}
-      <div className="relative w-full aspect-square bg-muted">
+      <div className="relative w-full bg-muted max-h-[500px] flex items-center justify-center overflow-hidden">
         {donation.video_url ? (
           <video
             src={donation.video_url}
-            className="w-full h-full object-cover"
+            className="w-full h-auto max-h-[500px] object-contain bg-black"
             autoPlay
             muted
             loop
@@ -164,10 +164,10 @@ export function PostCard({ donation, onClaim }: PostCardProps) {
           <img
             src={donation.photo_url}
             alt={donation.title}
-            className="w-full h-full object-cover"
+            className="w-full h-auto max-h-[500px] object-contain bg-black/5"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center bg-muted text-muted-foreground text-sm">
+          <div className="w-full h-48 flex items-center justify-center bg-muted text-muted-foreground text-sm">
             No media available
           </div>
         )}

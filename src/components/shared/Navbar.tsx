@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, PlusSquare, Map, User, Bell, HeartHandshake, Truck } from 'lucide-react';
+import { Home, PlusSquare, Map, User, Bell, HeartHandshake, Truck, Package } from 'lucide-react';
 import { useUserStore } from '@/store/useUserStore';
 import { supabase } from '@/lib/supabaseClient';
 import { requestNotificationPermission } from '@/services/fcm-service';
@@ -57,6 +57,7 @@ export function Navbar() {
 
   const navItems = [
     { href: '/feed', icon: Home, label: 'Feed', roles: ['donor', 'ngo', 'volunteer', 'admin'] },
+    { href: '/my-donations', icon: Package, label: 'Activity', roles: ['donor', 'ngo', 'volunteer', 'admin'] },
     { href: '/post', icon: PlusSquare, label: 'Post', roles: ['donor', 'admin'] },
     { href: '/tasks', icon: Truck, label: 'Tasks', roles: ['volunteer', 'admin'] },
     { href: '/map', icon: Map, label: 'Map', roles: ['volunteer', 'admin'] },
